@@ -3,6 +3,8 @@
 ## Introduction
 At Honkmobile we perform a large amount of log analysis, click-stream tracking, and loading into a data warehouse. Importing web logs following regular daily rotation is functional, but supporting our BI needs requires near real-time import from our API and web servers into our reporting platform. This script is used to emit logs from various applications into RabbitMQ, from which a set of workers consume the logs appropriately.
 
+In casual testing we were able to produce more than 10,000 messages per second with this script. Any bottleneck is in RabbitMQ's ability to absorb the message stream fast enough. 
+
 ## Requirements
 This script requires Python 2.x. We have only tested it on 2.7, though it will likely work with earlier versions. Python 3 support is not available as we use librabbitmq, which unfortunately does not support Python 3 yet.
 
