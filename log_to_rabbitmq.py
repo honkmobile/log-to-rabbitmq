@@ -212,20 +212,19 @@ if __name__ == '__main__':
     ARGPARSE = argparse.ArgumentParser(description='Take messages from stdin' +
                                        ' and feed them into RabbitMQ')
     ARGPARSE.add_argument('-c', '--config', nargs=1,
-                          help='Path to config file', required=True)
+                          help='Path to config file', required=False)
     ARGPARSE.add_argument('-m', '--make-config', required=False, default=False,
                           action='store_true')
     ARGPARSE.add_argument('-l', '--log-level', required=False, default=30)
     ARGS = vars(ARGPARSE.parse_args())
+    if ARGS['make_config'] is True:
+        make_config()
+        sys.exit(0)
     PARSER = SafeConfigParser()
     PARSER.read(ARGS['config'])
     logging.basicConfig(level=int(ARGS['log_level']),
                         format=PARSER.get('logging', 'log_format'),
                         datefmt=PARSER.get('logging', 'log_datefmt'))
-
-    if ARGS['make_config'] is True:
-        make_config()
-        sys.exit(0)
 
     # We only instantiate our AMQP class *once*. After successfully connecting
     # and declaring our queue we then handle further connection issues within
