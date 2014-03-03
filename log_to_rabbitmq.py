@@ -30,14 +30,17 @@ __version__ = 0.1
 __author__ = 'honkmobile'
 
 
-class RabbitMQ(object):  # pylint: disable=r0903
+class RabbitMQ(object):  # pylint: disable=r0902,r0903
     """Manages our queue connection"""
 
     __name__ = 'RabbitMQ'
 
-    def __init__(self, config_parser):
+    def __init__(self, config_parser, queue_name=None):
         # Get our configs
-        self.queue = config_parser.get('rabbitmq', 'queue')
+        if queue_name is None:
+            self.queue = config_parser.get('rabbitmq', 'queue')
+        else:
+            self.queue = queue_name
         self.host = config_parser.get('rabbitmq', 'host')
         self.port = int(config_parser.get('rabbitmq', 'port'))
         self.delivery_mode = int(config_parser.get('rabbitmq',
@@ -126,11 +129,8 @@ class RabbitMQ(object):  # pylint: disable=r0903
         else:
             return True
 
-    def publish(self, log, do_buffer=True):
-        """
-        Publishes a log entry into the queue. The do_buffer parameter is to
-        prevent double-buffering of a log entry that may be caught elsewhere.
-        """
+    def publish(self, log):
+        """Publishes a log entry into the queue."""
         logging.debug('Publishing to ' + self.queue + ', message: ' + str(log))
         connection_result = self._refresh_connection()
         logging.debug('connection_result: ' + str(connection_result))
@@ -163,15 +163,17 @@ class RabbitMQ(object):  # pylint: disable=r0903
 def drain_buffer(message_queue):
     """Attempts to drain all logs from the queue buffer, if there are any"""
     if not message_queue.buffer.empty():
-        for log in range(message_queue.buffer.qsize()):
+        for log in range(
+                message_queue.buffer.qsize()):  # pylint: disable=w0612
             logging.info(
                 'Processing buffered message. ' +
                 str(message_queue.buffer.qsize()) + ' message(s) remain')
-            message_queue.publish(message_queue.buffer.get(), do_buffer=False)
+            message_queue.publish(message_queue.buffer.get())
         return True
     else:
         logging.debug('No messages buffered')
         return True
+
 
 def make_config():
     """Generates a new sample config file and dumps it to stdout"""
@@ -216,6 +218,7 @@ if __name__ == '__main__':
     ARGPARSE.add_argument('-m', '--make-config', required=False, default=False,
                           action='store_true')
     ARGPARSE.add_argument('-l', '--log-level', required=False, default=30)
+    ARGPARSE.add_argument('-q', '--queue', required=False, default=None)
     ARGS = vars(ARGPARSE.parse_args())
     if ARGS['make_config'] is True:
         make_config()
@@ -230,7 +233,7 @@ if __name__ == '__main__':
     # and declaring our queue we then handle further connection issues within
     # the class itself. However, the queue declaration does need to succeed.
     try:
-        QUEUE = RabbitMQ(PARSER)
+        QUEUE = RabbitMQ(PARSER, queue_name=ARGS['queue'])
     except ConnectionError:
         logging.fatal('Unable to create AMQP object')
         logging.fatal(traceback.format_exc())
