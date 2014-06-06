@@ -3,12 +3,12 @@
 ## Introduction
 At Honkmobile we perform a large amount of log analysis, click-stream tracking, and loading into a data warehouse. Importing web logs following regular daily rotation is functional, but supporting our BI needs requires near real-time import from our API and web servers into our reporting platform. This script is used to emit logs from various applications into RabbitMQ, from which a set of workers consume the logs appropriately.
 
-In casual testing we were able to produce more than 10,000 messages per second with this script. Any bottleneck is in RabbitMQ's ability to absorb the message stream fast enough. 
+In casual testing we were able to produce more than 10,000 messages per second with this script. Any bottleneck in our environment is in RabbitMQ's ability to absorb the message stream fast enough, though theoretically it may be possible to swamp the host that produces logs. This would not be very likely in any real-world application.
 
 ## Requirements
-This script requires Python 2.x. We have only tested it on 2.7, though it will likely work with earlier versions. Python 3 support is not available as we use librabbitmq, which unfortunately does not support Python 3 yet.
+This script requires Python 2.x. We have only tested it on 2.7, though it will likely work with earlier versions. Python 3 support is not available as we use librabbitmq, which unfortunately does not support Python 3 yet (nod to the librabbitmq team).
 
-A *NIX system is also required. The current version does not support Windows, and cannot as it does not understand signals. Alternative handling is possible but has not been implemented.
+A *NIX system is also required. The current version does not support Windows, and cannot as it does not understand signals. Alternative handling is possible but has not been implemented. If you're in a Windows shop and want to tackle that then we'll appreciate it!
 
 ## Usage
 First you will need a config file. You can create one with one command:
@@ -33,7 +33,7 @@ Now start the script using this as input:
 
     ./log_to_rabbitmq.py -c /path/to/config < /var/log/nginx/access.log 2>/some/log/file
 
-That's all there is to it. So long as your config file is healthy you should be seeing access logs streaming into the queue that you have requested. Wrap this command in an init script and have it start *before* Nginx and you should be good to go.
+That's all there is to it. So long as your config file is healthy you should be seeing access logs streaming into the queue that you have requested. Wrap this command in an init script and have it start *before* Nginx and you should be good to go. Note that with Nginx you *must* have the listener on the other end of the pipe already running otherwise your server will block!
 
 ## Installation
 Installing the script is only as complicated as downloading it and saving it to disk. However you will require some additional Python modules that we rely on. This command will install your prerequisites:
@@ -44,7 +44,7 @@ Installing the script is only as complicated as downloading it and saving it to 
 
 When operating in a load-balanced environment and using a load balancer (such as an Elastic Load Balancer) you will very likely have issues with TCP timeouts. ELBs in particular have hard-set timeout of 60 seconds, regardless of keep-alive activity. This script has a connection refresh time feature that will close and reopen a connection after a specified number of seconds. If you operate behind any kind of load balancer or have a firewall between your RabbitMQ server and log producer then you will almost certainly want to set the refresh value to just less then your TCP timeout threshold.
 
-When a connection goes away an attempt will be made to reconnect immediately. Should this fail then any further incoming messages will be buffered inside the running process until the connection has been restored. This is a simple FIFO in-memory queue. Note that anything in the buffer will be processed prior to new messages upon reconnection to RabbitMQ.
+When a connection goes away an attempt will be made to reconnect immediately. Should this fail then any further incoming messages will be buffered inside the running process until the connection has been restored. This is a simple FIFO queue. Note that anything in the buffer will be processed prior to new messages upon reconnection to RabbitMQ.
 
 ## Sample Configuration
 
