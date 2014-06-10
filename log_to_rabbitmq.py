@@ -21,6 +21,7 @@ import time
 import timeout_decorator
 import traceback
 
+from librabbitmq import ChannelError
 from librabbitmq import Connection
 from librabbitmq import ConnectionError
 from ConfigParser import SafeConfigParser
@@ -86,7 +87,7 @@ class RabbitMQ(object):  # pylint: disable=r0902,r0903
         try:
             self.connection = Connection(host=self.host)
             self.channel = self.connection.channel()
-            logging.info('Connected to server')
+            logging.info('Connected to server: ' + self.host)
             self.last_connect = int(time.time())
             return True
         except ConnectionError:
@@ -102,7 +103,9 @@ class RabbitMQ(object):  # pylint: disable=r0902,r0903
     @timeout_decorator.timeout(5)
     def _declare(self):
         """Declares the queue used for receiving logs"""
-        logging.debug('Declaring queue: ' + self.queue)
+        logging.debug(
+            'Declaring queue: ' + self.queue + ', durable = ' +
+            repr(self.durable) + ', auto_delete = ' + repr(self.auto_delete))
         try:
             self.channel.queue_declare(queue=self.queue,
                                        durable=self.durable,
@@ -111,6 +114,14 @@ class RabbitMQ(object):  # pylint: disable=r0902,r0903
         except AttributeError:
             # We raise here as faliing to declare the queue is an immediate
             # show-stopper that things cannot neatly recover from.
+            raise
+        except ChannelError:
+            # This can happen if we are attempting to redefine a queue with
+            # settings that are not representative of those already present.
+            logging.fatal('A ChannelError occurred. Make sure that you are ' +
+                          'not attempting to change any existing queue '
+                          'declarations.')
+            logging.fatal(traceback.format_exc())
             raise
 
     def _refresh_connection(self):

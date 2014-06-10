@@ -38,7 +38,7 @@ import logging
 import unittest
 from ConfigParser import SafeConfigParser
 from librabbitmq import ChannelError
-# from timeout_decorator import TimeoutError
+from timeout_decorator import TimeoutError
 
 
 class TestLogToRabbitMQ(unittest.TestCase):  # pylint: disable=r0904
@@ -65,6 +65,7 @@ class TestLogToRabbitMQ(unittest.TestCase):  # pylint: disable=r0904
             self.parser.set('rabbitmq', 'durable', 'True')
             self.parser.set('rabbitmq', 'auto_delete', 'True')
             self.parser.set('rabbitmq', 'refresh', 'None')
+            self.parser.set('rabbitmq', 'queue', 'unittest')
             queue = log_to_rabbitmq.RabbitMQ(self.parser)
             assert queue.publish('test message')
         except ChannelError:
@@ -73,6 +74,7 @@ class TestLogToRabbitMQ(unittest.TestCase):  # pylint: disable=r0904
             self.parser.set('rabbitmq', 'durable', 'False')
             self.parser.set('rabbitmq', 'auto_delete', 'False')
             self.parser.set('rabbitmq', 'refresh', '10')
+            self.parser.set('rabbitmq', 'queue', 'unittest')
             queue = log_to_rabbitmq.RabbitMQ(self.parser)
             assert queue.publish('test message')
         except ChannelError:
@@ -86,7 +88,7 @@ class TestLogToRabbitMQ(unittest.TestCase):  # pylint: disable=r0904
 
     def test_publish(self):
         """Tests that we can publish to the queue"""
-        logging.debug('User host: ' + self.parser.get('rabbitmq', 'host'))
+        logging.debug('Using host: ' + self.parser.get('rabbitmq', 'host'))
         queue = log_to_rabbitmq.RabbitMQ(self.parser)
         assert queue.publish('test message')
 
@@ -103,15 +105,15 @@ class TestLogToRabbitMQ(unittest.TestCase):  # pylint: disable=r0904
         """Tests the make_config function"""
         assert log_to_rabbitmq.make_config()
 
-    ###########################################################################
+    ##########################################################################
     # These tests do not work, unfortunately. Python's signal handling breaks
     # the coverage module.
-    ###########################################################################
+    ##########################################################################
 
     # def test_cannot_connect(self):
     #     """Tests if the server is unavailable"""
     #     # Set our host to something that isn't a running RabbitMQ server
     #     self.parser.set('rabbitmq', 'host', 'example.com')
     #     with self.assertRaises(TimeoutError):
-    #         queue = log_to_rabbitmq.AMQP(self.parser)
+    #         queue = log_to_rabbitmq.RabbitMQ(self.parser)
     #         assert queue.publish('test message')

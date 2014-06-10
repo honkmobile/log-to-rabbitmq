@@ -78,6 +78,25 @@ When a connection goes away an attempt will be made to reconnect immediately. Sh
     log_format = %%(asctime)s - %%(levelname)s - %%(message)s
     log_datefmt = %%m/%%d/%%Y %%I:%%M:%%S %%p
 
+## Test Coverage
+
+    root@dev:/vagrant/log-to-rabbitmq# nosetests --cover-erase --with-coverage --cover-package=log_to_rabbitmq -v tests.py
+    Tests for proper handling of config elements ... ok
+    Tests draining the queue buffer ... ok
+    Tests the make_config function ... ok
+    Tests that our AMQP class has names in it ... ok
+    Tests that we can publish to the queue ... ok
+    Tests the _refresh_connection method ... ok
+
+    Name              Stmts   Miss  Cover   Missing
+    -----------------------------------------------
+    log_to_rabbitmq     155     59    62%   44, 93-95, 117, 149-151, 161-171, 225-289
+    ----------------------------------------------------------------------
+    Ran 6 tests in 0.135s
+
+    OK
+
+
 ## License
 log-to-rabbitmq is licensed under the MPLv2. If you have any questions regarding licensing,
 please contact us at <info@honkmobile.com>.
