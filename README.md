@@ -80,6 +80,8 @@ When a connection goes away an attempt will be made to reconnect immediately. Sh
 
 ## Test Coverage
 
+Our test coverage is pretty weak at the moment. It will need to be beefed-up considerably!
+
     root@dev:/vagrant/log-to-rabbitmq# nosetests --cover-erase --with-coverage --cover-package=log_to_rabbitmq -v tests.py
     Tests for proper handling of config elements ... ok
     Tests draining the queue buffer ... ok
